@@ -42,6 +42,7 @@ export class Board {
 	private _computeNextState(state: State): State {
 		this._generation += 1;
 
+		// this shound go inside the type State
 		const computeOccurences = (cells: State): Map<string, number> => {
 			const occurences = new Map();
 			cells.forEach((cell) => {
