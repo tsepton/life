@@ -6,7 +6,11 @@
 		y: number;
 	};
 
+	let isClicked = false;
+
 	let speed = 1;
+
+	let paused = false;
 
 	let interval: number | undefined;
 
@@ -33,9 +37,9 @@
 
 	let generationIndex = 0;
 
-	function addCell(cell: Cell) {}
-
-	function removeCell(x: number, y: number) {}
+	function addCell(newCell: Cell) {
+		currentState = [...(currentState ?? []), { x: newCell.x, y: newCell.y }];
+	}
 
 	function computeNextState(state: State): State {
 		const computeOccurences = (cells: Cell[]): Map<string, number> => {
@@ -104,6 +108,29 @@
 		window.addEventListener('resize', onWindowResize);
 		onWindowResize();
 
+		window.addEventListener('mousedown', (event) => {
+			paused = true;
+			isClicked = true;
+			const x = Math.floor(event.clientX / 25);
+			const y = Math.floor(event.clientY / 25);
+			addCell({ x, y });
+		});
+
+		window.addEventListener('mouseup', (event) => {
+			isClicked = false;
+			window.setTimeout(() => {
+				paused = false;
+			}, 1000);
+		});
+
+		window.addEventListener('mousemove', (event) => {
+			if (isClicked) {
+				const x = Math.floor(event.clientX / 25);
+				const y = Math.floor(event.clientY / 25);
+				addCell({ x, y });
+			}
+		});
+
 		return () => {
 			clearInterval(interval);
 			window.removeEventListener('resize', onWindowResize);
@@ -112,13 +139,14 @@
 
 	$: {
 		clearInterval(interval);
-		interval = setInterval(
-			() => {
-				currentState = computeNextState(currentState ?? initializationState);
-				generationIndex += 1;
-			},
-			(21 - speed) ** 2
-		);
+		if (!paused)
+			interval = setInterval(
+				() => {
+					currentState = computeNextState(currentState ?? initializationState);
+					generationIndex += 1;
+				},
+				(21 - speed) ** 2
+			);
 	}
 
 	$: generationIndex, drawBoard(currentState ?? []);
@@ -127,11 +155,11 @@
 <main>
 	<canvas bind:this={board}></canvas>
 	<div class="overlay-ui">
-		<div class="flex-col">
+		<div class="flex-col overlay-background">
 			Speed of simulation: {speed}
 			<input type="range" min="1" max="20" bind:value={speed} />
 		</div>
-		<div class="flex-col">
+		<div class="flex-col overlay-background">
 			<span> Generation: {generationIndex} </span>
 			<span> Population: {currentState?.length ?? 0} </span>
 		</div>
@@ -143,13 +171,12 @@
 		overflow: hidden;
 		height: 100vh;
 	}
-	
+
 	.overlay-ui {
 		position: absolute;
 		top: 0;
 		left: 0;
 		right: 0;
-		background-color: rgba(255, 255, 255, 0.5);
 		display: flex;
 		justify-content: space-between;
 		padding: 1rem;
@@ -158,6 +185,12 @@
 	.flex-col {
 		display: flex;
 		flex-direction: column;
+	}
+
+	.overlay-background {
+		padding: 1rem;
+		border-radius: 5px;
+		background-color: rgba(226, 226, 226, 0.5);
 	}
 
 	canvas {
