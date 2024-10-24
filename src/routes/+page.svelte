@@ -6,13 +6,13 @@
 		y: number;
 	};
 
-	let speed = 10;
+	let speed = 1;
 
 	let interval: number | undefined;
 
 	type State = Cell[];
 
-	let board: HTMLCanvasElement;
+	let board: HTMLCanvasElement | undefined;
 
 	let initializationState: State = [
 		{ x: 2, y: 2 },
@@ -95,25 +95,74 @@
 	}
 
 	onMount(() => {
-		return () => clearInterval(interval);
+		const onWindowResize = () => {
+			if (!board) return;
+			board.width = window.innerWidth;
+			board.height = window.innerHeight;
+		};
+
+		window.addEventListener('resize', onWindowResize);
+		onWindowResize();
+
+		return () => {
+			clearInterval(interval);
+			window.removeEventListener('resize', onWindowResize);
+		};
 	});
 
 	$: {
 		clearInterval(interval);
-		interval = setInterval(() => {
-			currentState = computeNextState(currentState ?? initializationState);
-			generationIndex += 1;
-		}, 10000 / speed);
+		interval = setInterval(
+			() => {
+				currentState = computeNextState(currentState ?? initializationState);
+				generationIndex += 1;
+			},
+			(21 - speed) ** 2
+		);
 	}
 
 	$: generationIndex, drawBoard(currentState ?? []);
 </script>
 
-<canvas bind:this={board} width="700" height="700" style="border: 1px solid black;"></canvas>
-<div>
-	<input type="range" min="10" max="1000" bind:value={speed} />
-	<div>
-		<span> Generation: {generationIndex} </span>
-		<span> Population: {currentState?.length ?? 0} </span>
+<main>
+	<canvas bind:this={board}></canvas>
+	<div class="overlay-ui">
+		<div class="flex-col">
+			Speed of simulation: {speed}
+			<input type="range" min="1" max="20" bind:value={speed} />
+		</div>
+		<div class="flex-col">
+			<span> Generation: {generationIndex} </span>
+			<span> Population: {currentState?.length ?? 0} </span>
+		</div>
 	</div>
-</div>
+</main>
+
+<style>
+	main {
+		overflow: hidden;
+		height: 100vh;
+	}
+	
+	.overlay-ui {
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		background-color: rgba(255, 255, 255, 0.5);
+		display: flex;
+		justify-content: space-between;
+		padding: 1rem;
+	}
+
+	.flex-col {
+		display: flex;
+		flex-direction: column;
+	}
+
+	canvas {
+		background-color: white;
+		padding: 0;
+		margin: 0;
+	}
+</style>
