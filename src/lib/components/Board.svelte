@@ -2,11 +2,11 @@
 	import board, { Board } from '$lib/board';
 	import { onMount } from 'svelte';
 
-	let isClicked = false;
-
 	export let speed = 10;
 
 	export let paused = false;
+
+	let isClicked = false;
 
 	let generationInterval: number | undefined;
 
@@ -25,42 +25,40 @@
 		});
 	}
 
-	onMount(() => {
-		const onWindowResize = () => {
-			if (!canvas) return;
-			canvas.width = window.innerWidth;
-			canvas.height = window.innerHeight;
-		};
+	function onWindowResize(_: UIEvent): void {
+		if (!canvas) return;
+		canvas.width = window.innerWidth;
+		canvas.height = window.innerHeight;
+	}
 
-		// FIXME - Svelte offers a more idiomatic way of working with canvas
-		window.addEventListener('resize', onWindowResize);
-		onWindowResize();
-
-		window.addEventListener('mousedown', (event) => {
-			clearInterval(mouseClickInterval);
-			paused = true;
-			isClicked = true;
+	function onMouseMove(event: MouseEvent): void {
+		if (isClicked) {
 			const x = Math.floor(event.clientX / 25);
 			const y = Math.floor(event.clientY / 25);
 			$board.addCell(x, y);
 			drawBoard($board);
-		});
+		}
+	}
 
-		window.addEventListener('mouseup', (event) => {
-			isClicked = false;
-			mouseClickInterval = window.setTimeout(() => {
-				paused = false;
-			}, 1000);
-		});
+	function onMouseDown(event: MouseEvent): void {
+		clearInterval(mouseClickInterval);
+		paused = true;
+		isClicked = true;
+		const x = Math.floor(event.clientX / 25);
+		const y = Math.floor(event.clientY / 25);
+		$board.addCell(x, y);
+		drawBoard($board);
+	}
 
-		window.addEventListener('mousemove', (event) => {
-			if (isClicked) {
-				const x = Math.floor(event.clientX / 25);
-				const y = Math.floor(event.clientY / 25);
-				$board.addCell(x, y);
-				drawBoard($board);
-			}
-		});
+	function onMouseUp(_: MouseEvent): void {
+		isClicked = false;
+		mouseClickInterval = window.setTimeout(() => {
+			paused = false;
+		}, 1000);
+	}
+
+	onMount(() => {
+		onWindowResize({} as UIEvent);
 
 		return () => {
 			clearInterval(generationInterval);
@@ -79,10 +77,15 @@
 				(21 - speed) ** 2
 			);
 	}
-
 </script>
 
-<canvas bind:this={canvas}></canvas>
+<svelte:window on:resize={onWindowResize} />
+<canvas
+	bind:this={canvas}
+	on:mousedown={onMouseDown}
+	on:mouseup={onMouseUp}
+	on:mousemove={onMouseMove}
+></canvas>
 
 <style>
 	canvas {
