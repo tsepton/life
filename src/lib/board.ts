@@ -32,9 +32,12 @@ export class Board {
         if (!this._currentState) return;
 		if (this._currentState.filter((c) => c.x === x && c.y === y).length > 0) return;
         
-        console.log('addCell', x, y, "this._currentState", this._currentState);
 		this._currentState = [...(this._currentState), new Cell(x, y)];
 	}
+
+	// TODO - implement removeCell
+
+	// TODO - implement toggleCell
 
 	private _computeNextState(state: State): State {
 		this._generation += 1;
