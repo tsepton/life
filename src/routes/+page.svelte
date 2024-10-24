@@ -1,8 +1,7 @@
 <script lang="ts">
-	import { Cell, type State } from '$lib/cell';
+	import type { Board } from '$lib/board';
+	import board from '$lib/board';
 	import { onMount } from 'svelte';
-
-	// TODO: Refactor to separate game from UI 
 
 	let isClicked = false;
 
@@ -10,68 +9,18 @@
 
 	let paused = false;
 
-	let interval: number | undefined;
+	let generationInterval: number | undefined;
 
-	let board: HTMLCanvasElement | undefined;
+	let mouseClickInterval: number | undefined;
 
-	let currentState: State | undefined;
+	let canvas: HTMLCanvasElement | undefined;
 
-	let generationIndex = 0;
-
-	function addCell(x: number, y: number): void {
-		if (!currentState) return;
-		if (currentState.filter((c) => c.x === x && c.y === y).length > 0) return;
-
-		currentState = [...(currentState ?? []), new Cell(x, y)];
-	}
-
-	function computeNextState(state: State): State {
-		const computeOccurences = (cells: Cell[]): Map<string, number> => {
-			const occurences = new Map();
-			cells.forEach((cell) => {
-				if (occurences.has(cell.id)) occurences.set(cell.id, occurences.get(cell.id) + 1);
-				else occurences.set(cell.id, 1);
-			});
-			return occurences;
-		};
-
-		const augmentedState = state.map((cell) => {
-			const neighborsOnAxis = (n: number) => [n - 1, n, n + 1];
-			const livingNeighbors = state
-				.filter(
-					(c) => neighborsOnAxis(cell.x).includes(c.x) && neighborsOnAxis(cell.y).includes(c.y)
-				)
-				.filter((c) => c.x !== cell.x || c.y !== cell.y);
-			const deadNeighbors = [-1, 0, 1]
-				.flatMap((x) => [-1, 0, 1].map((y) => new Cell(cell.x + x, cell.y + y)))
-				.filter((c) => !state.map((n) => n.id).includes(c.id)); // TODO refactor with class equality
-
-			return { livingNeighbors, deadNeighbors, cell };
-		});
-
-		// Check for underpopulation and overpopulation.
-		const liveCells: Cell[] = augmentedState
-			.filter((info) => info.livingNeighbors.length === 2 || info.livingNeighbors.length === 3)
-			.map((info) => info.cell);
-
-		// Check for reproduction.
-		const reproducedCells = computeOccurences(augmentedState.flatMap((a) => a.deadNeighbors))
-			.entries()
-			.filter(([_, count]) => count === 3)
-			.map(([key]) => {
-				const [x, y] = key.split(',').map(Number);
-				return new Cell(x, y);
-			});
-
-		return [...liveCells, ...reproducedCells];
-	}
-
-	function drawBoard(state: State): void {
-		const ctx = board?.getContext('2d');
+	function drawBoard(board: Board): void {
+		const ctx = canvas?.getContext('2d');
 		if (!ctx) return;
 
 		ctx.reset();
-		state.forEach((cell) => {
+		board.state.forEach((cell) => {
 			ctx.fillStyle = 'black';
 			ctx.fillRect(cell.x * 25, cell.y * 25, 22.5, 22.5);
 		});
@@ -79,25 +28,28 @@
 
 	onMount(() => {
 		const onWindowResize = () => {
-			if (!board) return;
-			board.width = window.innerWidth;
-			board.height = window.innerHeight;
+			if (!canvas) return;
+			canvas.width = window.innerWidth;
+			canvas.height = window.innerHeight;
 		};
 
+		// FIXME - Svelte offers a more idiomatic way of working with canvas
 		window.addEventListener('resize', onWindowResize);
 		onWindowResize();
 
 		window.addEventListener('mousedown', (event) => {
+			clearInterval(mouseClickInterval);
 			paused = true;
 			isClicked = true;
 			const x = Math.floor(event.clientX / 25);
 			const y = Math.floor(event.clientY / 25);
-			addCell(x, y);
+			$board.addCell(x, y);
+			drawBoard($board);
 		});
 
 		window.addEventListener('mouseup', (event) => {
 			isClicked = false;
-			window.setTimeout(() => {
+			mouseClickInterval = window.setTimeout(() => {
 				paused = false;
 			}, 1000);
 		});
@@ -106,41 +58,42 @@
 			if (isClicked) {
 				const x = Math.floor(event.clientX / 25);
 				const y = Math.floor(event.clientY / 25);
-				addCell(x, y);
+				$board.addCell(x, y);
+				drawBoard($board);
 			}
 		});
 
 		return () => {
-			clearInterval(interval);
+			clearInterval(generationInterval);
 			window.removeEventListener('resize', onWindowResize);
 		};
 	});
 
 	$: {
-		clearInterval(interval);
+		clearInterval(generationInterval);
 		if (!paused)
-			interval = setInterval(
+			generationInterval = setInterval(
 				() => {
-					currentState = computeNextState(currentState ?? []);
-					generationIndex += 1;
+					$board.generation += 1;
+					drawBoard($board);
 				},
 				(21 - speed) ** 2
 			);
 	}
 
-	$: generationIndex, drawBoard(currentState ?? []);
+	$: $board.generation, $board.state, drawBoard($board);
 </script>
 
 <main>
-	<canvas bind:this={board}></canvas>
+	<canvas bind:this={canvas}></canvas>
 	<div class="overlay-ui">
 		<div class="flex-col overlay-background">
 			Speed of simulation: {speed}
 			<input type="range" min="1" max="20" bind:value={speed} />
 		</div>
 		<div class="flex-col overlay-background">
-			<span> Generation: {generationIndex} </span>
-			<span> Population: {currentState?.length ?? 0} </span>
+			<span> Generation: {$board.generation} </span>
+			<span> Population: {$board.state.length} </span>
 		</div>
 	</div>
 </main>
