@@ -3,11 +3,13 @@
 	import Overlay from '$lib/components/Overlay.svelte';
 
 	let speed = 10;
+
+	let zoom = 10;
 </script>
 
 <main>
-	<Board bind:speed />
-	<Overlay bind:speed />
+	<Board bind:speed bind:zoom/>
+	<Overlay bind:speed bind:zoom/>
 </main>
 
 <style>

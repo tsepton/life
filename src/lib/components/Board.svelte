@@ -2,9 +2,14 @@
 	import board, { Board } from '$lib/board';
 	import { onMount } from 'svelte';
 
+    // TODO : Be able to drag the board around with mouse right click
+    // TODO : Be able to zoom in and out with the mouse wheel
+
 	export let speed = 10;
 
 	export let paused = false;
+
+    export let zoom = 2;
 
 	let isClicked = false;
 
@@ -21,7 +26,7 @@
 		ctx.reset();
 		board.state.forEach((cell) => {
 			ctx.fillStyle = 'black';
-			ctx.fillRect(cell.x * 25, cell.y * 25, 22.5, 22.5);
+			ctx.fillRect(cell.x * zoom, cell.y * zoom, zoom, zoom);
 		});
 	}
 
@@ -33,8 +38,8 @@
 
 	function onMouseMove(event: MouseEvent): void {
 		if (isClicked) {
-			const x = Math.floor(event.clientX / 25);
-			const y = Math.floor(event.clientY / 25);
+			const x = Math.floor(event.clientX / zoom);
+			const y = Math.floor(event.clientY / zoom);
 			$board.addCell(x, y);
 			drawBoard($board);
 		}
@@ -44,8 +49,8 @@
 		clearInterval(mouseClickInterval);
 		paused = true;
 		isClicked = true;
-		const x = Math.floor(event.clientX / 25);
-		const y = Math.floor(event.clientY / 25);
+		const x = Math.floor(event.clientX / zoom);
+		const y = Math.floor(event.clientY / zoom);
 		$board.addCell(x, y);
 		drawBoard($board);
 	}
