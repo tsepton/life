@@ -1,53 +1,36 @@
 <script lang="ts">
+	import { Cell, type State } from '$lib/cell';
 	import { onMount } from 'svelte';
 
-	type Cell = {
-		x: number;
-		y: number;
-	};
+	// TODO: Refactor to separate game from UI 
 
 	let isClicked = false;
 
-	let speed = 1;
+	let speed = 10;
 
 	let paused = false;
 
 	let interval: number | undefined;
 
-	type State = Cell[];
-
 	let board: HTMLCanvasElement | undefined;
-
-	let initializationState: State = [
-		{ x: 2, y: 2 },
-		{ x: 1, y: 2 },
-		{ x: 2, y: 1 },
-		{ x: 1, y: 1 },
-
-		{ x: 10, y: 9 },
-		{ x: 10, y: 10 },
-		{ x: 10, y: 11 },
-
-		{ x: 17, y: 15 },
-		{ x: 18, y: 15 },
-		{ x: 19, y: 15 }
-	];
 
 	let currentState: State | undefined;
 
 	let generationIndex = 0;
 
-	function addCell(newCell: Cell) {
-		currentState = [...(currentState ?? []), { x: newCell.x, y: newCell.y }];
+	function addCell(x: number, y: number): void {
+		if (!currentState) return;
+		if (currentState.filter((c) => c.x === x && c.y === y).length > 0) return;
+
+		currentState = [...(currentState ?? []), new Cell(x, y)];
 	}
 
 	function computeNextState(state: State): State {
 		const computeOccurences = (cells: Cell[]): Map<string, number> => {
 			const occurences = new Map();
 			cells.forEach((cell) => {
-				const key = `${cell.x},${cell.y}`;
-				if (occurences.has(key)) occurences.set(key, occurences.get(key) + 1);
-				else occurences.set(key, 1);
+				if (occurences.has(cell.id)) occurences.set(cell.id, occurences.get(cell.id) + 1);
+				else occurences.set(cell.id, 1);
 			});
 			return occurences;
 		};
@@ -60,28 +43,24 @@
 				)
 				.filter((c) => c.x !== cell.x || c.y !== cell.y);
 			const deadNeighbors = [-1, 0, 1]
-				.flatMap((x) => [-1, 0, 1].map((y) => ({ x: cell.x + x, y: cell.y + y })))
-				.filter((c) => c.x !== cell.x || c.y !== cell.y)
-				.filter((c) => !livingNeighbors.map((n) => [n.x, n.y]).includes([c.x, c.y]));
+				.flatMap((x) => [-1, 0, 1].map((y) => new Cell(cell.x + x, cell.y + y)))
+				.filter((c) => !state.map((n) => n.id).includes(c.id)); // TODO refactor with class equality
 
 			return { livingNeighbors, deadNeighbors, cell };
 		});
 
-		// Any live cell with fewer than two live neighbours dies, as if by underpopulation.
-		// Any live cell with two or three live neighbours lives on to the next generation.
-		// Any live cell with more than three live neighbours dies, as if by overpopulation.
+		// Check for underpopulation and overpopulation.
 		const liveCells: Cell[] = augmentedState
 			.filter((info) => info.livingNeighbors.length === 2 || info.livingNeighbors.length === 3)
 			.map((info) => info.cell);
 
-		// Any dead cell with exactly three live neighbours becomes a live cell, as if by reproduction.
-		// console.log(index, augmentedState.deadNeighbors.length);
+		// Check for reproduction.
 		const reproducedCells = computeOccurences(augmentedState.flatMap((a) => a.deadNeighbors))
 			.entries()
 			.filter(([_, count]) => count === 3)
 			.map(([key]) => {
 				const [x, y] = key.split(',').map(Number);
-				return { x, y };
+				return new Cell(x, y);
 			});
 
 		return [...liveCells, ...reproducedCells];
@@ -113,7 +92,7 @@
 			isClicked = true;
 			const x = Math.floor(event.clientX / 25);
 			const y = Math.floor(event.clientY / 25);
-			addCell({ x, y });
+			addCell(x, y);
 		});
 
 		window.addEventListener('mouseup', (event) => {
@@ -127,7 +106,7 @@
 			if (isClicked) {
 				const x = Math.floor(event.clientX / 25);
 				const y = Math.floor(event.clientY / 25);
-				addCell({ x, y });
+				addCell(x, y);
 			}
 		});
 
@@ -142,7 +121,7 @@
 		if (!paused)
 			interval = setInterval(
 				() => {
-					currentState = computeNextState(currentState ?? initializationState);
+					currentState = computeNextState(currentState ?? []);
 					generationIndex += 1;
 				},
 				(21 - speed) ** 2
