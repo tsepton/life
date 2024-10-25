@@ -43,8 +43,8 @@
 
 	function onMouseMove(event: MouseEvent): void {
 		if (isClicked) {
-			const x = Math.floor(event.clientX / zoom);
-			const y = Math.floor(event.clientY / zoom);
+			const x = Math.floor((event.clientX - transformation.x * zoom) / zoom);
+			const y = Math.floor((event.clientY - transformation.y * zoom) / zoom);
 			$board.addCell(x, y);
 			drawBoard($board);
 		}
@@ -54,9 +54,8 @@
 		clearInterval(mouseClickInterval);
 		paused = true;
 		isClicked = event.button === 0;
-		// FIXME : the zoom functonality breaks these coordinates
-		const x = Math.floor(event.clientX / zoom);
-		const y = Math.floor(event.clientY / zoom);
+		const x = (event.clientX - transformation.x * zoom) / zoom;
+		const y = (event.clientY - transformation.y * zoom) / zoom;
 		$board.addCell(x, y);
 		drawBoard($board);
 	}
