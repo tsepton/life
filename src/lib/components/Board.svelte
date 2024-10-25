@@ -98,6 +98,10 @@
 	});
 
 	$: {
+		// FIXME
+		// this is highly inneficient 
+		// check MDN for a better way to do this
+		// https://developer.mozilla.org/en-US/docs/Web/API/Window/requestAnimationFrame
 		clearInterval(generationInterval);
 		if (!paused)
 			generationInterval = setInterval(
