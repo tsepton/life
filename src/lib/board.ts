@@ -24,15 +24,15 @@ export class Board {
 		this._generation = generation;
 	}
 
-    public get state(): State {
-        return this._currentState;
-    }
+	public get state(): State {
+		return this._currentState;
+	}
 
 	public addCell(x: number, y: number): void {
-        if (!this._currentState) return;
+		if (!this._currentState) return;
 		if (this._currentState.filter((c) => c.x === x && c.y === y).length > 0) return;
-        
-		this._currentState = [...(this._currentState), new Cell(x, y)];
+
+		this._currentState = [...this._currentState, new Cell(x, y)];
 	}
 
 	// TODO - implement removeCell
@@ -40,9 +40,7 @@ export class Board {
 	// TODO - implement toggleCell
 
 	private _computeNextState(state: State): State {
-		this._generation += 1;
-
-		// this shound go inside the type State
+		// this should go inside the type State
 		const computeOccurences = (cells: State): Map<string, number> => {
 			const occurences = new Map();
 			cells.forEach((cell) => {
