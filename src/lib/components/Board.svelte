@@ -43,8 +43,7 @@
 
 	function onMouseMove(event: MouseEvent): void {
 		if (isClicked) {
-			const x = Math.floor((event.clientX - transformation.x * zoom) / zoom);
-			const y = Math.floor((event.clientY - transformation.y * zoom) / zoom);
+			const [x, y] = translateCoordinates(event.clientX, event.clientY).map(Math.floor);
 			$board.addCell(x, y);
 			drawBoard($board);
 		}
@@ -54,8 +53,7 @@
 		clearInterval(mouseClickInterval);
 		paused = true;
 		isClicked = event.button === 0;
-		const x = (event.clientX - transformation.x * zoom) / zoom;
-		const y = (event.clientY - transformation.y * zoom) / zoom;
+		const [x, y] = translateCoordinates(event.clientX, event.clientY).map(Math.floor);
 		$board.addCell(x, y);
 		drawBoard($board);
 	}
@@ -81,6 +79,12 @@
 		transformation.y = mouseY / zoom - worldY;
 
 		drawBoard($board);
+	}
+
+	function translateCoordinates(x: number, y: number): [number, number] {
+		const worldX = (x - transformation.x * zoom) / zoom;
+		const worldY = (y - transformation.y * zoom) / zoom;
+		return [worldX, worldY];
 	}
 
 	onMount(() => {
