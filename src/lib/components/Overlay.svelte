@@ -2,9 +2,7 @@
 	import board from '$lib/board';
 
 	export let speed = 10;
-    
-	export let zoom = 10;
-</script>
+    </script>
 
 <div class="overlay-ui">
 	<div class="flex-col overlay-background">
@@ -14,11 +12,6 @@
 	<div class="flex-col overlay-background">
 		<span> Generation: {$board.generation} </span>
 		<span> Population: {$board.state.length} </span>
-	</div>
-
-    <div class="flex-col overlay-background">
-		Zoom: {zoom}
-		<input type="range" min="1" max="30" bind:value={zoom} />
 	</div>
 </div>
 

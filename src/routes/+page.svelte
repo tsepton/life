@@ -4,12 +4,11 @@
 
 	let speed = 10;
 
-	let zoom = 10;
 </script>
 
 <main>
-	<Board bind:speed bind:zoom/>
-	<Overlay bind:speed bind:zoom/>
+	<Board bind:speed />
+	<Overlay bind:speed />
 </main>
 
 <style>
