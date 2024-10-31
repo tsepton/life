@@ -2,12 +2,16 @@
 	import board from '$lib/board';
 
 	export let speed = 10;
+
+	let speedPerGen: string;
+
+	$: speedPerGen = Number(1.0 / speed).toFixed(2);
     </script>
 
 <div class="overlay-ui">
 	<div class="flex-col overlay-background">
-		Speed of simulation: {speed}
-		<input type="range" min="1" max="20" bind:value={speed} />
+		Speed of simulation: {speedPerGen}s/generation
+		<input type="range" min="1" max="100" bind:value={speed} />
 	</div>
 	<div class="flex-col overlay-background">
 		<span> Generation: {$board.generation} </span>

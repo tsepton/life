@@ -6,13 +6,13 @@
 
 	let paused = false;
 
+	let previousGenRender: number = 0;
+
 	let zoom = 10;
 
 	let transformation = { x: 0, y: 0 };
 
 	let isClicked = false;
-
-	let generationInterval: number | undefined;
 
 	let mouseClickInterval: number | undefined;
 
@@ -92,26 +92,23 @@
 		onWindowResize({} as UIEvent);
 
 		return () => {
-			clearInterval(generationInterval);
 			window.removeEventListener('resize', onWindowResize);
 		};
 	});
 
-	$: {
-		// FIXME
-		// this is highly inneficient 
-		// check MDN for a better way to do this
-		// https://developer.mozilla.org/en-US/docs/Web/API/Window/requestAnimationFrame
-		clearInterval(generationInterval);
-		if (!paused)
-			generationInterval = setInterval(
-				() => {
-					$board.generation += 1;
-					drawBoard($board);
-				},
-				(21 - speed) ** 2
-			);
-	}
+	const nextRendering = (t: number) => {
+		if (paused) return;
+		if (t - previousGenRender < 1000 / speed) {
+			requestAnimationFrame(nextRendering);
+			return;
+		}
+		previousGenRender = t;
+		$board.generation += 1;
+		drawBoard($board);
+		requestAnimationFrame(nextRendering);
+	};
+
+	$: if (!paused) requestAnimationFrame(nextRendering);
 </script>
 
 <svelte:window on:resize={onWindowResize} />
